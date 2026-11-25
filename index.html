@@ -1,0 +1,122 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ten-Sign Duel - play credits demo</title><meta name="description" content="Free play-credit demo. 30% player win chance shown openly. No real money."><style>*{box-sizing:border-box;margin:0}
+:root{--bg:#070a14;--ink:#eef2ff;--mut:#98a2c3;--acc:#7cf0c8;--acc2:#ffb454;--bad:#ff6b7a;--glass:rgba(255,255,255,.07);--line:rgba(255,255,255,.14)}
+html,body{min-height:100%;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+body{overflow-x:hidden}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+.wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:14px 14px 40px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:6px 2px 12px}
+h1{font-size:clamp(26px,6vw,44px);letter-spacing:-.02em;line-height:1;background:linear-gradient(120deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+.tag{color:var(--mut);font-size:14px;margin-top:6px}
+.badge{font-size:11px;letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--line);border-radius:99px;padding:6px 10px;color:var(--mut);background:var(--glass)}
+.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.hud div{background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:10px 8px;text-align:center;backdrop-filter:blur(8px)}
+.hud b{display:block;font-size:clamp(18px,4.5vw,26px);font-variant-numeric:tabular-nums}
+.hud span{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em}
+.odds{display:flex;gap:8px;margin-bottom:12px}
+.odds .o{flex:1;border-radius:14px;padding:10px 12px;border:1px solid var(--line);background:var(--glass);font-size:12px;color:var(--mut)}
+.odds .o b{white-space:nowrap;font-size:21px;color:var(--ink);display:block}
+.odds .o.p b{color:var(--acc)}.odds .o.a b{color:var(--bad)}
+.odds .bar{height:6px;border-radius:9px;margin-top:6px;background:rgba(255,255,255,.1);overflow:hidden}
+.odds .bar i{display:block;height:100%;background:var(--acc)}
+.odds .o.a .bar i{background:var(--bad)}
+.stage{position:relative;border-radius:22px;border:1px solid var(--line);background:rgba(8,12,26,.55);backdrop-filter:blur(6px);padding:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.btn{appearance:none;border:0;cursor:pointer;font:inherit;font-weight:700;color:#04110c;background:linear-gradient(135deg,var(--acc),#a9ffdf);padding:14px 22px;border-radius:14px;font-size:16px;box-shadow:0 8px 24px rgba(124,240,200,.25);transition:transform .12s,filter .12s;min-height:48px}
+.btn:hover{filter:brightness(1.08)}.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.btn.ghost{background:var(--glass);color:var(--ink);border:1px solid var(--line);box-shadow:none}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.result{margin-top:12px;border-radius:14px;padding:12px 14px;text-align:center;border:1px solid var(--line);animation:pop .35s ease}
+.result.win{background:rgba(124,240,200,.14);border-color:rgba(124,240,200,.5)}
+.result.loss{background:rgba(255,107,122,.12);border-color:rgba(255,107,122,.4)}
+.result b{display:block;font-size:20px}.result span{color:var(--mut);font-size:14px}
+.hint{text-align:center;color:var(--mut);font-size:13px;margin-top:10px}
+.hist{display:flex;gap:5px;justify-content:center;margin-top:12px;flex-wrap:wrap;min-height:14px}
+.hist i{width:14px;height:14px;border-radius:50%;background:var(--bad);opacity:.8}.hist i.w{background:var(--acc)}
+details{margin-top:12px;background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:14px;color:var(--mut)}
+summary{cursor:pointer;color:var(--ink);font-weight:600}
+details p{margin-top:8px;line-height:1.5}
+footer{margin-top:16px;font-size:12px;color:var(--mut);text-align:center;line-height:1.5}
+.note{margin-top:10px;text-align:center;font-size:13px;color:var(--acc2)}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
+@keyframes shake{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style></head><body><script>const STAKE=10,START=100;
+function randInt(n){const lim=Math.floor(0x100000000/n)*n,b=new Uint32Array(1);do{crypto.getRandomValues(b)}while(b[0]>=lim);return b[0]%n}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=randInt(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+const $=s=>document.querySelector(s);
+const Bank={credits:START,rounds:0,wins:0,hist:[]};
+function paintBank(){
+ $('#cr').textContent=Bank.credits;$('#rd').textContent=Bank.rounds;$('#wn').textContent=Bank.wins;
+ $('#rt').textContent=Bank.rounds?Math.round(Bank.wins/Bank.rounds*100)+'%':'-';
+ $('#hist').innerHTML=Bank.hist.map(w=>`<i class="${w?'w':''}" title="${w?'win':'loss'}"></i>`).join('');
+ const br=$('#brk');if(br)br.style.display=Bank.rounds>=25?'block':'none';
+}
+function settle(win){Bank.credits+=win?STAKE:-STAKE;Bank.rounds++;if(win)Bank.wins++;Bank.hist=[win,...Bank.hist].slice(0,24);paintBank()}
+function canPlay(){return Bank.credits>=STAKE}
+function showResult(win,detail){const r=$('#result');r.className='result '+(win?'win':'loss');r.style.display='block';
+ r.innerHTML=`<b>${win?'Win. +'+STAKE+' credits':'Not a win. -'+STAKE+' credits'}</b><span>${detail}</span>`;
+ if(!canPlay()){r.innerHTML+=`<span style="display:block;margin-top:6px">Out of credits. Reset to start again with ${START} play credits.</span>`}}
+function resetBank(){Bank.credits=START;Bank.rounds=0;Bank.wins=0;Bank.hist=[];paintBank();if(window.onReset)onReset()}
+function shell(o){
+document.body.innerHTML=`<canvas id="bg"></canvas><div class="wrap">
+<header class="top"><div><h1>${o.title}</h1><div class="tag">${o.tag}</div></div><div class="badge">Play credits only</div></header>
+<div class="hud"><div><b id="cr">${START}</b><span>Credits</span></div><div><b id="rd">0</b><span>Rounds</span></div><div><b id="wn">0</b><span>Wins</span></div><div><b id="rt">-</b><span>Your win rate</span></div></div>
+<div class="odds"><div class="o p"><b>30%</b>player wins<div class="bar"><i style="width:30%"></i></div></div><div class="o a"><b>70%</b>admin wins<div class="bar"><i style="width:70%"></i></div></div><div class="o"><b>${STAKE} &rarr; ${STAKE*2}</b>stake, win returns<div class="bar"><i style="width:100%;background:var(--acc2)"></i></div></div></div>
+<div class="stage" id="stage">${o.stage}<div id="result" class="result" style="display:none"></div><div class="actions" id="actions"></div><div class="hint" id="hint"></div><div class="hist" id="hist"></div><div class="note" id="brk" style="display:none">Good time for a break. Nothing is owed and nothing carries over.</div></div>
+<details><summary>Rules and fairness</summary>${o.rules}<p>Randomness comes from your browser's secure random generator. Each round is independent: past results never change the next one. Credits have no cash value. There are no deposits, withdrawals or prizes. Balance resets when you reload.</p></details>
+<div class="actions"><button class="btn ghost" id="resetBtn" type="button">Reset credits</button></div>
+<footer>Free demo for fun. The 70% admin edge is shown openly, so expect to lose more than you win.</footer></div>`;
+$('#resetBtn').onclick=resetBank;paintBank();}
+function setActions(list){const a=$('#actions');a.innerHTML='';list.forEach(([label,fn,cls,dis])=>{const b=document.createElement('button');b.type='button';b.className='btn '+(cls||'');b.textContent=label;b.disabled=!!dis;b.onclick=fn;a.appendChild(b)})}
+/* ambient particle background */
+function ambient(cfg){const c=$('#bg'),x=c.getContext('2d');let W,H;const P=[];
+ function rs(){W=c.width=innerWidth;H=c.height=innerHeight}rs();addEventListener('resize',rs);
+ for(let i=0;i<cfg.n;i++)P.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*cfg.r+.4,vx:(Math.random()-.5)*cfg.vx,vy:cfg.vy*(.4+Math.random()),a:Math.random()*6.28,c:cfg.cols[i%cfg.cols.length]});
+ function f(t){x.clearRect(0,0,W,H);const g=x.createRadialGradient(W/2,H*cfg.gy,0,W/2,H*cfg.gy,Math.max(W,H)*.8);g.addColorStop(0,cfg.g0);g.addColorStop(1,cfg.g1);x.fillStyle=g;x.fillRect(0,0,W,H);
+  for(const p of P){p.x+=p.vx;p.y+=p.vy;p.a+=.02;if(p.y<-5)p.y=H+5;if(p.y>H+5)p.y=-5;if(p.x<-5)p.x=W+5;if(p.x>W+5)p.x=-5;x.globalAlpha=.35+.35*Math.sin(p.a);x.fillStyle=p.c;x.beginPath();x.arc(p.x,p.y,p.r,0,6.28);x.fill()}
+  x.globalAlpha=1;if(cfg.after)cfg.after(x,W,H,t);requestAnimationFrame(f)}requestAnimationFrame(f)}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+const SIGNS=[['Fire','🔥','#ff6a3d'],['Water','💧','#3da5ff'],['Earth','🪨','#b48a5a'],['Air','🌪️','#9be7ff'],['Storm','⚡','#ffe14d'],['Frost','❄️','#a8d8ff'],['Light','☀️','#ffd97a'],['Shadow','🌑','#9b7bff'],['Metal','⚙️','#c3cad6'],['Wood','🌿','#68e08a']];
+const beats=(a,b)=>[1,2,3].includes((b-a+10)%10);
+let pick=null,busy=false,done=false;
+shell({title:'Ten-Sign Duel',tag:'Pick a sign. Beat the game\'s sign.',
+stage:`<div class="arena" id="arena"><svg class="rays" viewBox="-100 -100 200 200"></svg><div id="nodes"></div><div class="core" id="core"><div class="msg" id="msg">Tap a sign</div><div class="orb me" id="me"></div><div class="orb gm" id="gm"></div><div class="flash" id="flash"></div></div></div>`,
+rules:`<p>Ten signs sit in a circle. Each sign beats the next three clockwise. You pick one, the game draws one at random. You win if your sign beats the game's sign. Ties and all other outcomes lose.</p><p><b>Win chance: 3 of 10 draws, so 30%, for any sign you pick.</b> Your choice is real but no sign is better than another.</p><p>Stake ${STAKE} play credits. A win returns ${STAKE*2} total, a loss returns 0.</p>`});
+ambient({n:70,r:2.2,vx:.3,vy:-.35,cols:['#ff8a5c','#7cc7ff','#b69bff','#ffe08a'],gy:.4,g0:'#1b1440',g1:'#05060f'});
+const css=document.createElement('style');css.textContent=`
+.arena{position:relative;width:min(100%,520px);aspect-ratio:1;margin:0 auto;border-radius:50%;background:radial-gradient(circle,rgba(124,90,255,.25),transparent 65%)}
+.rays{position:absolute;inset:0;width:100%;height:100%;animation:spin 60s linear infinite;opacity:.5}
+@keyframes spin{to{transform:rotate(360deg)}}
+.node{position:absolute;width:19%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:2px solid var(--c);background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--c) 55%,#fff 0%),rgba(10,10,30,.9) 75%);color:#fff;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 18px color-mix(in srgb,var(--c) 45%,transparent);transition:transform .2s,box-shadow .2s,opacity .2s}
+.node span{font-size:clamp(20px,6.5vw,34px);line-height:1}.node small{font-size:clamp(8px,2.3vw,12px);opacity:.9;margin-top:2px}
+.node:hover:not(:disabled){transform:translate(-50%,-50%) scale(1.1)}
+.node.sel{transform:translate(-50%,-50%) scale(1.18);box-shadow:0 0 0 3px #ffb454,0 0 34px #ffb454}
+.node.beaten{box-shadow:0 0 0 3px #7cf0c8,0 0 22px #7cf0c8}
+.node.gm{box-shadow:0 0 0 3px #ff6b7a,0 0 34px #ff6b7a}
+.node.dim{opacity:.35}
+.core{position:absolute;left:50%;top:50%;width:42%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;font-size:clamp(11px,3vw,15px);color:var(--mut);background:radial-gradient(circle,rgba(255,255,255,.1),rgba(0,0,0,.35));border:1px solid var(--line)}
+.msg{position:relative;z-index:2;padding:0 8px;line-height:1.3}.msg b{color:#fff}
+.orb{position:absolute;width:44%;aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:clamp(24px,8vw,42px);opacity:0;z-index:3;background:radial-gradient(circle at 35% 30%,#fff3,#0008);border:2px solid var(--c)}
+.orb.me{left:-60%;top:28%;--c:#ffb454}.orb.gm{right:-60%;top:28%;--c:#ff6b7a}
+.core.clash .orb.me{animation:inL .7s cubic-bezier(.3,1.4,.5,1) forwards}.core.clash .orb.gm{animation:inR .7s cubic-bezier(.3,1.4,.5,1) forwards}
+@keyframes inL{from{opacity:1;left:-70%}to{opacity:1;left:4%}}@keyframes inR{from{opacity:1;right:-70%}to{opacity:1;right:4%}}
+.flash{position:absolute;inset:0;border-radius:50%;background:#fff;opacity:0;z-index:4;pointer-events:none}
+.core.clash .flash{animation:fl .5s .65s ease-out}@keyframes fl{0%{opacity:.9}100%{opacity:0}}
+.core.clash .msg{opacity:0}
+.arena.shk{animation:shake .4s}`;document.head.appendChild(css);
+const nodes=$('#nodes');
+SIGNS.forEach((s,i)=>{const a=(i*36-90)*Math.PI/180;const b=document.createElement('button');b.type='button';b.className='node';b.style.cssText=`left:${50+39*Math.cos(a)}%;top:${50+39*Math.sin(a)}%;--c:${s[2]}`;b.innerHTML=`<span>${s[1]}</span><small>${s[0]}</small>`;b.setAttribute('aria-label',s[0]);b.onclick=()=>choose(i);nodes.appendChild(b)});
+const rays=document.querySelector('.rays');for(let i=0;i<10;i++){const a=i*36-90;rays.innerHTML+=`<line x1="0" y1="0" x2="${90*Math.cos(a*Math.PI/180)}" y2="${90*Math.sin(a*Math.PI/180)}" stroke="rgba(180,150,255,.35)" stroke-width=".4"/>`}
+rays.innerHTML+='<circle r="90" fill="none" stroke="rgba(180,150,255,.3)" stroke-width=".5"/>';
+function paint(){[...nodes.children].forEach((n,i)=>{n.className='node';if(pick===i)n.classList.add('sel');else if(pick!==null&&!done&&beats(pick,i))n.classList.add('beaten');n.disabled=busy||done})}
+function choose(i){if(busy||done)return;pick=i;paint();$('#msg').innerHTML=`<b>${SIGNS[i][0]}</b> beats the<br>3 green signs`;ctl()}
+function ctl(){if(done)setActions([['New round',next]]);else setActions([[`Duel for ${STAKE} credits`,duel,'',pick===null||busy||!canPlay()]]);$('#hint').textContent=done?'':'Orange: your sign. Green: signs yours beats.'}
+async function duel(){if(pick===null||busy||!canPlay())return;busy=true;const c=randInt(10);const win=beats(pick,c);ctl();
+ $('#me').textContent=SIGNS[pick][1];$('#gm').textContent=SIGNS[c][1];$('#core').classList.add('clash');await sleep(900);
+ done=true;busy=false;paint();nodes.children[c].classList.add('gm');[...nodes.children].forEach((n,i)=>{if(i!==c&&i!==pick)n.classList.add('dim')});
+ settle(win);$('#arena').classList.add('shk');setTimeout(()=>$('#arena').classList.remove('shk'),450);
+ const v=c===pick?`Tie: both chose ${SIGNS[pick][0]}. A tie counts as a loss.`:win?`${SIGNS[pick][0]} beats ${SIGNS[c][0]}.`:`${SIGNS[pick][0]} does not beat ${SIGNS[c][0]}.`;showResult(win,v);ctl()}
+function next(){pick=null;done=false;$('#result').style.display='none';$('#core').classList.remove('clash');$('#msg').textContent='Tap a sign';paint();ctl()}
+window.onReset=next;paint();ctl();
+</script></body></html>
