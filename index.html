@@ -40,7 +40,24 @@ footer{margin-top:16px;font-size:12px;color:var(--mut);text-align:center;line-he
 @keyframes pop{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
 @keyframes shake{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
-</style></head><body><script>const STAKE=10,START=100;
+</style></head><body><script>const S=(b,c)=>`<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="${c||'currentColor'}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${b}</svg>`;
+const IC={
+fire:S('<path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 .3 1.2 1 2 2 2-.5-3 .2-5.5 1-8z" fill="rgba(255,120,50,.35)"/>'),
+water:S('<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" fill="rgba(80,170,255,.35)"/><path d="M9 14a3 3 0 0 0 3 3"/>'),
+earth:S('<path d="M3 19l6-11 4 6 3-4 5 9z" fill="rgba(190,140,90,.35)"/>'),
+air:S('<path d="M3 9h11a3 3 0 1 0-3-3"/><path d="M3 14h15a3 3 0 1 1-3 3"/><path d="M3 19h6"/>'),
+storm:S('<path d="M13 2L5 14h6l-1 8 9-13h-6z" fill="rgba(255,225,80,.4)"/>'),
+frost:S('<path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7"/><path d="M9.5 3.5L12 6l2.5-2.5M9.5 20.5L12 18l2.5 2.5"/>'),
+light:S('<circle cx="12" cy="12" r="4.2" fill="rgba(255,215,120,.45)"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>'),
+shadow:S('<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z" fill="rgba(160,130,255,.35)"/>'),
+metal:S('<path d="M12 3l7.5 4.3v8.4L12 20l-7.5-4.3V7.3z" fill="rgba(200,208,220,.3)"/><circle cx="12" cy="11.5" r="3"/>'),
+wood:S('<path d="M5 19C5 9 11 4 20 4c0 9-5 15-15 15z" fill="rgba(100,220,130,.35)"/><path d="M5 19L14 10"/>'),
+wave:S('<path d="M2 10c2.5-3 5-3 7.5 0S14.5 13 17 10s3-2.5 5-1.5"/><path d="M2 16c2.5-3 5-3 7.5 0s5 3 7.5 0 3-2.5 5-1.5" opacity=".7"/>'),
+ship:S('<path d="M3 15h18l-3 5H6z" fill="rgba(255,180,84,.45)"/><path d="M12 15V4l6 6h-6"/><path d="M12 4l-5 7h5" />'),
+boom:S('<path d="M12 2l2 5 5-2-2 5 5 2-5 2 2 5-5-2-2 5-2-5-5 2 2-5-5-2 5-2-2-5 5 2z" fill="rgba(255,120,60,.55)"/>'),
+splash:S('<path d="M4 17c2-2 3-2 5 0s3 2 5 0 3-2 5 0"/><path d="M8 13l-1-5M12 12V5M16 13l1-5"/>'),
+gem:S('<path d="M6 4h12l4 6-10 11L2 10z" fill="rgba(61,224,255,.35)"/><path d="M2 10h20M9 4l-2 6 5 11 5-11-2-6"/>')};
+const STAKE=10,START=100;
 function randInt(n){const lim=Math.floor(0x100000000/n)*n,b=new Uint32Array(1);do{crypto.getRandomValues(b)}while(b[0]>=lim);return b[0]%n}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=randInt(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 const $=s=>document.querySelector(s);
@@ -65,7 +82,7 @@ document.body.innerHTML=`<canvas id="bg"></canvas><div class="wrap">
 <div class="stage" id="stage">${o.stage}<div id="result" class="result" style="display:none"></div><div class="actions" id="actions"></div><div class="hint" id="hint"></div><div class="hist" id="hist"></div><div class="note" id="brk" style="display:none">Good time for a break. Nothing is owed and nothing carries over.</div></div>
 <details><summary>Rules and fairness</summary>${o.rules}<p>Randomness comes from your browser's secure random generator. Each round is independent: past results never change the next one. Credits have no cash value. There are no deposits, withdrawals or prizes. Balance resets when you reload.</p></details>
 <div class="actions"><button class="btn ghost" id="resetBtn" type="button">Reset credits</button></div>
-<footer>Free demo for fun. The 70% admin edge is shown openly, so expect to lose more than you win.</footer></div>`;
+<footer>Free demo for fun. The admin wins 70% of rounds, shown openly, so expect to lose more often than you win.</footer></div>`;
 $('#resetBtn').onclick=resetBank;paintBank();}
 function setActions(list){const a=$('#actions');a.innerHTML='';list.forEach(([label,fn,cls,dis])=>{const b=document.createElement('button');b.type='button';b.className='btn '+(cls||'');b.textContent=label;b.disabled=!!dis;b.onclick=fn;a.appendChild(b)})}
 /* ambient particle background */
@@ -77,7 +94,7 @@ function ambient(cfg){const c=$('#bg'),x=c.getContext('2d');let W,H;const P=[];
   x.globalAlpha=1;if(cfg.after)cfg.after(x,W,H,t);requestAnimationFrame(f)}requestAnimationFrame(f)}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
-const SIGNS=[['Fire','🔥','#ff6a3d'],['Water','💧','#3da5ff'],['Earth','🪨','#b48a5a'],['Air','🌪️','#9be7ff'],['Storm','⚡','#ffe14d'],['Frost','❄️','#a8d8ff'],['Light','☀️','#ffd97a'],['Shadow','🌑','#9b7bff'],['Metal','⚙️','#c3cad6'],['Wood','🌿','#68e08a']];
+const SIGNS=[['Fire','fire','#ff6a3d'],['Water','water','#3da5ff'],['Earth','earth','#b48a5a'],['Air','air','#9be7ff'],['Storm','storm','#ffe14d'],['Frost','frost','#a8d8ff'],['Light','light','#ffd97a'],['Shadow','shadow','#9b7bff'],['Metal','metal','#c3cad6'],['Wood','wood','#68e08a']];
 const beats=(a,b)=>[1,2,3].includes((b-a+10)%10);
 let pick=null,busy=false,done=false;
 shell({title:'Ten-Sign Duel',tag:'Pick a sign. Beat the game\'s sign.',
@@ -89,7 +106,7 @@ const css=document.createElement('style');css.textContent=`
 .rays{position:absolute;inset:0;width:100%;height:100%;animation:spin 60s linear infinite;opacity:.5}
 @keyframes spin{to{transform:rotate(360deg)}}
 .node{position:absolute;width:19%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;border:2px solid var(--c);background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--c) 55%,#fff 0%),rgba(10,10,30,.9) 75%);color:#fff;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 18px color-mix(in srgb,var(--c) 45%,transparent);transition:transform .2s,box-shadow .2s,opacity .2s}
-.node span{font-size:clamp(20px,6.5vw,34px);line-height:1}.node small{font-size:clamp(8px,2.3vw,12px);opacity:.9;margin-top:2px}
+.node span{font-size:clamp(22px,7vw,36px);line-height:1;display:flex;color:var(--c)}.node span svg{filter:drop-shadow(0 0 5px var(--c))}.node small{font-size:clamp(8px,2.3vw,12px);opacity:.9;margin-top:2px}
 .node:hover:not(:disabled){transform:translate(-50%,-50%) scale(1.1)}
 .node.sel{transform:translate(-50%,-50%) scale(1.18);box-shadow:0 0 0 3px #ffb454,0 0 34px #ffb454}
 .node.beaten{box-shadow:0 0 0 3px #7cf0c8,0 0 22px #7cf0c8}
@@ -97,7 +114,7 @@ const css=document.createElement('style');css.textContent=`
 .node.dim{opacity:.35}
 .core{position:absolute;left:50%;top:50%;width:42%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;font-size:clamp(11px,3vw,15px);color:var(--mut);background:radial-gradient(circle,rgba(255,255,255,.1),rgba(0,0,0,.35));border:1px solid var(--line)}
 .msg{position:relative;z-index:2;padding:0 8px;line-height:1.3}.msg b{color:#fff}
-.orb{position:absolute;width:44%;aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:clamp(24px,8vw,42px);opacity:0;z-index:3;background:radial-gradient(circle at 35% 30%,#fff3,#0008);border:2px solid var(--c)}
+.orb svg{filter:drop-shadow(0 0 8px var(--c))}.orb{color:var(--c);position:absolute;width:44%;aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:clamp(24px,8vw,42px);opacity:0;z-index:3;background:radial-gradient(circle at 35% 30%,#fff3,#0008);border:2px solid var(--c)}
 .orb.me{left:-60%;top:28%;--c:#ffb454}.orb.gm{right:-60%;top:28%;--c:#ff6b7a}
 .core.clash .orb.me{animation:inL .7s cubic-bezier(.3,1.4,.5,1) forwards}.core.clash .orb.gm{animation:inR .7s cubic-bezier(.3,1.4,.5,1) forwards}
 @keyframes inL{from{opacity:1;left:-70%}to{opacity:1;left:4%}}@keyframes inR{from{opacity:1;right:-70%}to{opacity:1;right:4%}}
@@ -106,14 +123,14 @@ const css=document.createElement('style');css.textContent=`
 .core.clash .msg{opacity:0}
 .arena.shk{animation:shake .4s}`;document.head.appendChild(css);
 const nodes=$('#nodes');
-SIGNS.forEach((s,i)=>{const a=(i*36-90)*Math.PI/180;const b=document.createElement('button');b.type='button';b.className='node';b.style.cssText=`left:${50+39*Math.cos(a)}%;top:${50+39*Math.sin(a)}%;--c:${s[2]}`;b.innerHTML=`<span>${s[1]}</span><small>${s[0]}</small>`;b.setAttribute('aria-label',s[0]);b.onclick=()=>choose(i);nodes.appendChild(b)});
+SIGNS.forEach((s,i)=>{const a=(i*36-90)*Math.PI/180;const b=document.createElement('button');b.type='button';b.className='node';b.style.cssText=`left:${50+39*Math.cos(a)}%;top:${50+39*Math.sin(a)}%;--c:${s[2]}`;b.innerHTML=`<span>${IC[s[1]]}</span><small>${s[0]}</small>`;b.setAttribute('aria-label',s[0]);b.onclick=()=>choose(i);nodes.appendChild(b)});
 const rays=document.querySelector('.rays');for(let i=0;i<10;i++){const a=i*36-90;rays.innerHTML+=`<line x1="0" y1="0" x2="${90*Math.cos(a*Math.PI/180)}" y2="${90*Math.sin(a*Math.PI/180)}" stroke="rgba(180,150,255,.35)" stroke-width=".4"/>`}
 rays.innerHTML+='<circle r="90" fill="none" stroke="rgba(180,150,255,.3)" stroke-width=".5"/>';
 function paint(){[...nodes.children].forEach((n,i)=>{n.className='node';if(pick===i)n.classList.add('sel');else if(pick!==null&&!done&&beats(pick,i))n.classList.add('beaten');n.disabled=busy||done})}
 function choose(i){if(busy||done)return;pick=i;paint();$('#msg').innerHTML=`<b>${SIGNS[i][0]}</b> beats the<br>3 green signs`;ctl()}
 function ctl(){if(done)setActions([['New round',next]]);else setActions([[`Duel for ${STAKE} credits`,duel,'',pick===null||busy||!canPlay()]]);$('#hint').textContent=done?'':'Orange: your sign. Green: signs yours beats.'}
 async function duel(){if(pick===null||busy||!canPlay())return;busy=true;const c=randInt(10);const win=beats(pick,c);ctl();
- $('#me').textContent=SIGNS[pick][1];$('#gm').textContent=SIGNS[c][1];$('#core').classList.add('clash');await sleep(900);
+ $('#me').innerHTML=IC[SIGNS[pick][1]];$('#gm').innerHTML=IC[SIGNS[c][1]];$('#core').classList.add('clash');await sleep(900);
  done=true;busy=false;paint();nodes.children[c].classList.add('gm');[...nodes.children].forEach((n,i)=>{if(i!==c&&i!==pick)n.classList.add('dim')});
  settle(win);$('#arena').classList.add('shk');setTimeout(()=>$('#arena').classList.remove('shk'),450);
  const v=c===pick?`Tie: both chose ${SIGNS[pick][0]}. A tie counts as a loss.`:win?`${SIGNS[pick][0]} beats ${SIGNS[c][0]}.`:`${SIGNS[pick][0]} does not beat ${SIGNS[c][0]}.`;showResult(win,v);ctl()}
